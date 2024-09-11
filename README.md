@@ -52,7 +52,7 @@
 
   ```yml
   substitutions:
-    device_name: esp485
+    device_name: living_esp485
 
   esphome:
     name: ${device_name}
@@ -63,13 +63,18 @@
       type: arduino
 
   logger:
+    level: debug
+
+  debug:
+    update_interval: 5s
 
   api:
-    encryption:
+    encryption: 
       key: !secret api_encryption_key
 
   ota:
-    password: !secret ota_password
+    - platform: esphome
+      password: !secret ota_password
 
   wifi:
     ssid: !secret wifi_ssid
@@ -78,10 +83,24 @@
 
   web_server:
     port: 80
+    version: 3
+    include_internal: true
+    
+  text_sensor:
+    - platform: wifi_info
+      ip_address:
+        name: ${device_name}_ip
+        icon: mdi:ip-outline
+        internal: true
+      mac_address:
+        name: ${device_name}_mac
+        icon: mdi:map-marker-outline
+        internal: true
 
   button:
     - platform: restart
-      name: ${device_name}_reboot
+      name: ${device_name}_reboot  
+      internal: true
     - platform: uart
       name: ${device_name}_ep_reset
       data: [0x01, 0x10, 0x00, 0x02, 0x00, 0x01, 0x02, 0x00, 0x01, 0x66, 0x72]
@@ -110,23 +129,29 @@
       setup_priority: -10
       update_interval: 10s
 
-  text_sensor:
-    - platform: wifi_info
-      ip_address:
-        name: ${device_name}_ip
-      mac_address:
-        name: ${device_name}_mac
-
   sensor:
-    - platform: uptime
-      name: ${device_name}_uptime
     - platform: wifi_signal
       name: ${device_name}_signal
-      update_interval: 60s
-    - platform: internal_temperature
-      id: ${device_name}_cpu_temprature
-      name: ${device_name}_cpu_temprature
-
+      icon: mdi:signal
+      internal: true
+    - platform: debug
+      free:
+        name: ${device_name}_free
+        unit_of_measurement: "KB"
+        internal: true
+        filters:
+          - lambda: |-
+              return x / 1024;
+      block:
+        name: ${device_name}_max_block
+        unit_of_measurement: "KB"
+        internal: true
+        filters:
+          - lambda: |-
+              return x / 1024;      
+      loop_time:
+        name: ${device_name}_loop_time
+        internal: true
     - platform: modbus_controller
       modbus_controller_id: ${device_name}_modbus_controller
       id: ${device_name}_u
@@ -138,7 +163,6 @@
       value_type: FP32
       accuracy_decimals: 1
       device_class: voltage
-
     - platform: modbus_controller
       modbus_controller_id: ${device_name}_modbus_controller
       id: ${device_name}_i
@@ -150,7 +174,6 @@
       value_type: FP32
       accuracy_decimals: 3
       device_class: current
-
     - platform: modbus_controller
       modbus_controller_id: ${device_name}_modbus_controller
       id: ${device_name}_p
@@ -164,7 +187,6 @@
       filters:
         - multiply: 1000
       device_class: power
-
     - platform: modbus_controller
       modbus_controller_id: ${device_name}_modbus_controller
       id: ${device_name}_q
@@ -178,7 +200,6 @@
       filters:
         - multiply: 1000
       device_class: power
-
     - platform: modbus_controller
       modbus_controller_id: ${device_name}_modbus_controller
       id: ${device_name}_s
@@ -192,7 +213,6 @@
       filters:
         - multiply: 1000
       device_class: power
-
     - platform: modbus_controller
       modbus_controller_id: ${device_name}_modbus_controller
       id: ${device_name}_pf
@@ -203,7 +223,6 @@
       value_type: FP32
       accuracy_decimals: 3
       device_class: power_factor
-
     - platform: modbus_controller
       modbus_controller_id: ${device_name}_modbus_controller
       id: ${device_name}_freq
@@ -214,7 +233,6 @@
       register_type: holding
       value_type: FP32
       accuracy_decimals: 2
-
     - platform: modbus_controller
       modbus_controller_id: ${device_name}_modbus_controller
       id: ${device_name}_ep
@@ -241,7 +259,7 @@
   
   ![CRC16.jpg](./img/CRC16.jpg)
 
-- 透传模式
+- 透传模式（有空更新）
 
   通过 ESP 的 IP 和端口 666 透传数据，测试工具可以使用 SSCOM
 
